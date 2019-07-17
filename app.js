@@ -11,7 +11,8 @@ app.use(cors());
 
 const port = process.env.PORT || 8080;
 // ethernet
-const hostname = '172.17.56.134';
+const hostname = 'localhost';
+// const hostname = '172.17.56.134';
 // ethernet sala juntas
 // const hostname = '172.17.56.131';
 // wireless
