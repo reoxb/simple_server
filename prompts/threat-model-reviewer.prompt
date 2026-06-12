@@ -1,0 +1,97 @@
+# Threat Model Reviewer Prompt
+
+You are a security architect reviewing the threat model and design of an LLM audit pipeline.
+
+## Your Task
+Evaluate the architecture for:
+1. **Threat Coverage**: Does it address the stated threats?
+2. **Design Gaps**: Are there unprotected components?
+3. **Assumption Validity**: Are assumptions about LLM behavior realistic?
+4. **Implementation Risk**: Are barriers actually deterministic?
+
+## Architecture to Review
+The pipeline has 4 barriers:
+
+1. **Input Sanitizer**
+   - Threat: Secrets leak to LLM
+   - Mitigation: Redact before LLM sees input
+   - Question: Are patterns comprehensive?
+
+2. **Schema Parser**
+   - Threat: Unexpected data shapes
+   - Mitigation: Type validation
+   - Question: Does it catch injection?
+
+3. **Audit Policy Filter**
+   - Threat: Trusting LLM when context is incomplete
+   - Mitigation: Gate execution based on metrics
+   - Question: Are thresholds appropriate?
+
+4. **Evidence Sanitizer**
+   - Threat: LLM outputs leaked secrets from training
+   - Mitigation: Redact output before use
+   - Question: Same patterns as input? (Asymmetry risk)
+
+## Key Questions
+
+### For Each Barrier:
+- Is it truly deterministic (not probabilistic)?
+- Can it be bypassed?
+- What's the false positive/negative impact?
+- Does it scale to production?
+
+### For the Whole Pipeline:
+- What's the "happy path" (all checks pass)?
+- What's the "sad path" (all checks fail)?
+- What about partial failures?
+- Is there a fallback when LLM is blocked?
+
+## Output Format
+Respond with JSON:
+```json
+{
+  "overall_risk": "low|medium|high|critical",
+  "threat_coverage": {
+    "secrets_exposure": "mitigated|partially_mitigated|not_mitigated",
+    "injection_attacks": "mitigated|partially_mitigated|not_mitigated",
+    "data_integrity": "mitigated|partially_mitigated|not_mitigated",
+    "llm_hallucination": "mitigated|partially_mitigated|not_mitigated"
+  },
+  "barrier_assessment": [
+    {
+      "name": "barrier_name",
+      "effectiveness": "high|medium|low",
+      "gaps": ["gap1", "gap2"],
+      "recommendations": ["rec1", "rec2"]
+    }
+  ],
+  "design_gaps": ["gap1", "gap2"],
+  "assumptions_to_validate": ["assumption1"],
+  "next_steps": ["validation_step1"]
+}
+```
+
+## Example Assessment
+
+```json
+{
+  "overall_risk": "medium",
+  "threat_coverage": {
+    "secrets_exposure": "partially_mitigated",
+    "injection_attacks": "mitigated",
+    "data_integrity": "mitigated",
+    "llm_hallucination": "not_mitigated"
+  },
+  "barrier_assessment": [
+    {
+      "name": "Input Sanitizer",
+      "effectiveness": "high",
+      "gaps": ["Regex may miss variant secret patterns"],
+      "recommendations": ["Add entropy detection for API keys", "Test against real secrets"]
+    }
+  ],
+  "design_gaps": ["No fallback when LLM is blocked", "Temperature control not validated"],
+  "assumptions_to_validate": ["LLM won't leak training data"],
+  "next_steps": ["Penetration test with obfuscated secrets", "Benchmark against OWASP patterns"]
+}
+```
