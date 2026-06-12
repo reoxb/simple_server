@@ -1,66 +1,20 @@
-# Precision & Recall Analyzer Prompt
+# Precision & Recall Analysis Interpreter Prompt
 
-You are a security metrics expert evaluating redaction accuracy.
+You are a security metrics expert interpreting redaction accuracy results.
 
 ## Your Task
-Given:
-1. Redactions made by the system
-2. Ground truth labels (actual/not actual secrets)
+Given pre-calculated metrics:
+- Precision, Recall, F1 Score, Accuracy
+- Confusion matrix (TP, FP, FN, TN)
+- Per-pattern effectiveness breakdown
 
-Calculate:
-- **Precision**: Are redactions actually secrets? TP / (TP + FP)
-- **Recall**: Did we catch all secrets? TP / (TP + FN)
-- **F1 Score**: Harmonic mean: 2 * (Precision * Recall) / (Precision + Recall)
+Provide interpretation:
+1. Is the system ready for production?
+2. What patterns are working well?
+3. Where should we focus improvements?
+4. What's the business risk of current FP/FN rates?
 
-## Definitions
-- **TP (True Positive)**: Flagged pattern is actually a secret
-- **FP (False Positive)**: Flagged pattern is NOT a secret (false alarm)
-- **FN (False Negative)**: Secret was NOT flagged (missed)
-- **TN (True Negative)**: Non-secret was correctly ignored
-
-## Output Format
-Respond with JSON:
-```json
-{
-  "metrics": {
-    "precision": number,
-    "recall": number,
-    "f1_score": number,
-    "accuracy": number
-  },
-  "confusion_matrix": {
-    "true_positives": number,
-    "false_positives": number,
-    "false_negatives": number,
-    "true_negatives": number
-  },
-  "recommendations": [
-    "string"
-  ],
-  "pattern_effectiveness": {
-    "api_key_pattern": { "precision": number, "recall": number },
-    "password_pattern": { "precision": number, "recall": number },
-    "email_pattern": { "precision": number, "recall": number }
-  }
-}
-```
-
-## Example
-Test Set (10 strings):
-```
-1. "sk_live_abc123" → SECRET ✓
-2. "normal text" → NOT SECRET ✓
-3. "db_password=secret" → SECRET ✓
-4. "user@example.com" → PII ✓
-5. "message" → NOT SECRET ✓
-```
-
-System Redactions:
-- Caught 1, 3, 4 ✓ (TPs)
-- Flagged "example" from email ✗ (FP)
-- Missed nothing (no FN)
-
-Output:
+## Input Format (Computed Externally)
 ```json
 {
   "metrics": {
@@ -75,10 +29,66 @@ Output:
     "false_negatives": 0,
     "true_negatives": 1
   },
-  "recommendations": [
-    "Reduce FP on domain names by tightening email regex",
-    "All secrets detected (perfect recall)",
-    "High precision achieved"
-  ]
+  "test_set_size": 10,
+  "pattern_effectiveness": {
+    "api_key_pattern": { "precision": 1.0, "recall": 1.0 },
+    "password_pattern": { "precision": 0.5, "recall": 1.0 },
+    "email_pattern": { "precision": 0.67, "recall": 1.0 }
+  }
 }
 ```
+
+## Analysis Output Format
+Respond with JSON:
+```json
+{
+  "production_ready": boolean,
+  "interpretation": "narrative explaining metrics",
+  "pattern_analysis": {
+    "strong_patterns": ["pattern1"],
+    "weak_patterns": ["pattern2"],
+    "patterns_to_refine": ["pattern3"]
+  },
+  "false_positive_impact": "low|medium|high",
+  "false_negative_impact": "low|medium|high",
+  "recommended_actions": ["action1", "action2"],
+  "confidence_score": number
+}
+```
+
+## Example
+
+**Input Metrics:**
+```json
+{
+  "precision": 0.75,
+  "recall": 1.0,
+  "f1_score": 0.857
+}
+```
+
+**Output:**
+```json
+{
+  "production_ready": true,
+  "interpretation": "System catches all secrets (100% recall) with acceptable false positive rate (25%). 3 TP, 1 FP. Strong performance.",
+  "pattern_analysis": {
+    "strong_patterns": ["api_key_pattern"],
+    "weak_patterns": ["password_pattern"],
+    "patterns_to_refine": ["email_pattern"]
+  },
+  "false_positive_impact": "low",
+  "false_negative_impact": "low",
+  "recommended_actions": [
+    "Tighten password_pattern regex to reduce FPs",
+    "Test email_pattern against real datasets"
+  ],
+  "confidence_score": 0.85
+}
+```
+
+## Notes
+- **Precision = TP / (TP + FP)**: % of redactions that were actually secrets
+- **Recall = TP / (TP + FN)**: % of actual secrets we caught
+- **F1 = 2 * (P*R)/(P+R)**: Balance between precision and recall
+- Prefer high recall (catch all secrets) over high precision (avoid false alarms)

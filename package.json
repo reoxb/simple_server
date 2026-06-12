@@ -1,11 +1,13 @@
 {
   "name": "server_example",
   "version": "1.0.0",
-  "description": "",
+  "description": "Simple server with LLM audit pipeline",
   "main": "app.js",
   "scripts": {
     "start": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:metrics": "node test-metrics-calculator.js",
+    "test:audit": "node test-audit-pipeline.js"
   },
   "keywords": [],
   "author": "",
